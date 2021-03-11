@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 # Class for representing a linguistic variable
 class LinguisticVariable:
     def __init__(self, inp : list, name : str):
-        self.values = inp
-        self.name = name
+        self.values = list(inp)
+        self.name   = str(name)
 
         self.sets = {}
 
@@ -49,8 +49,8 @@ class LinguisticVariable:
 # Class for representing fuzzy sets
 class FuzzySet:
     def __init__(self, ling_var : LinguisticVariable, mem_fun : list, name : str):
-        self.name = name
-        self.ling_var = ling_var
+        self.name       = str(name)
+        self.ling_var   = ling_var
         
         inp = ling_var.values
 
@@ -99,7 +99,22 @@ class FuzzySet:
 
         return FuzzySet(self.ling_var, [max(self.dict[k], that.dict[k]) for k in self.dict], self.name + " or " + that.name)
 
-    # Apply extension principle on the fuzzy set
+    # Apply Zadehs extension principle on the fuzzy set
+    # The extension principle states that for multiple inputs mapping to same
+    # Output (many-to-one), we can create a fuzzy set from a fuzzy set corresponding
+    # to the inputs by having the elements be mappings of elements of inputs and the
+    # membership function be maximum of memebrship function of all inputs that mapped
+    # to the same output
+    #
+    # Example : applying function x % 2 on the set {0.1/1, 0.2/1.5, 0.5/3, 0.1/3.5}
+    # Will give {max(0.1, 0.5)/1, max(0.2, 0.1)/1.5}
+    #
+    # inp   | out    | membership
+    # 1    => 1         (0.1)
+    # 1.5  => 1.5    -  (0.2)
+    # 3    => 1         (0.5)
+    # 5.5  => 1.5    -  (0.1)
+    #
     def extend(self, function, out_name, out_ling_var = None):
         inp = self.ling_var.values
 
@@ -119,7 +134,7 @@ class FuzzySet:
         else:
             out_values = out_ling_var.values
 
-        out_mem    = list([min([self.dict[i] for i in out[k]]) for k in out_values])
+        out_mem    = list([max([self.dict[i] for i in out[k]]) for k in out_values])
 
         out_set = FuzzySet(out_ling_var, out_mem, out_name)
 
