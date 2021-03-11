@@ -1,6 +1,6 @@
-# Fuzzy Logic and Fuzzy controller
+# Soft computing
 
-Implementation of fuzzy logic concepts and a fuzzy controller. Done for reinforcing concepts learned as a part of EC360 Soft Computing elective at Department of ECE, GEC Thrissur, under the guidance of Prof Gopi C.
+Implementation fo various soft computing techniques taught in my undergraduate soft computing elective course.
 
 ---
 
