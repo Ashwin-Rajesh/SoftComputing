@@ -99,6 +99,15 @@ class FuzzySet:
 
         return FuzzySet(self.ling_var, [max(self.dict[k], that.dict[k]) for k in self.dict], self.name + " or " + that.name)
 
+    # Multiplication is assumed to be with a relation
+    def __mul__(self, that):
+        assert type(that) is FuzzyRelation , "The 2nd operand of multiplication must be a relation"
+        assert that.src == self.ling_var , "The relation and set are not compatible"
+
+        mem_fun = np.asarray(list(self.dict.values())).reshape(1, -1).dot(that.arr)
+
+        return FuzzySet(self.ling_var, list(mem_fun.flatten()), that.name + " " + self.name)
+
     # Apply Zadehs extension principle on the fuzzy set
     # The extension principle states that for multiple inputs mapping to same
     # Output (many-to-one), we can create a fuzzy set from a fuzzy set corresponding
@@ -129,10 +138,12 @@ class FuzzySet:
                 out[o] = [i]
         
         if(out_ling_var == None):
-            out_ling_var = LinguisticVariable(out_values, out_name)
             out_values = list(out.keys())
+            out_values.sort()
+            out_ling_var = LinguisticVariable(out_values, out_name)
         else:
-            out_values = out_ling_var.values
+            out_values = out_ling_var.values.sort()
+            out_values.sort()
 
         out_mem    = list([max([self.dict[i] for i in out[k]]) for k in out_values])
 
@@ -150,7 +161,7 @@ class FuzzySet:
             for j, k2 in enumerate(that.dict.keys()):
                 arr[i, j] = min(self.dict[k1], that.dict[k2])
 
-        return FuzzyRelation(self.ling_var, that.ling_var, arr)
+        return FuzzyRelation(self.ling_var, that.ling_var, arr, self.name + " x " + that.name)
 
     # Defuzzification technique 1 - Earliest maximum membership value
     def max_membership(self):
@@ -203,9 +214,11 @@ class FuzzySet:
 
 # Class for representing fuzzy relations
 class FuzzyRelation:
-    def __init__(self, src : LinguisticVariable, tgt : LinguisticVariable, arr : np.ndarray):
+    def __init__(self, src : LinguisticVariable, tgt : LinguisticVariable, arr : np.ndarray, name : str):
         self.src = src
         self.tgt = tgt
+
+        self.name = name
 
         assert arr.shape[0] == len(src.values) , "The number of rows is not correct"
         assert arr.shape[1] == len(tgt.values) , "The number of columns is not correct"
@@ -221,7 +234,7 @@ class FuzzyRelation:
             for j in range(len(that.tgt.values)):
                 arr[i][j] = max([min(self.arr[i, k], that.arr[k, j]) for k in range(len(self.tgt.values))])
 
-        return FuzzyRelation(self.src, that.tgt, arr)
+        return FuzzyRelation(self.src, that.tgt, arr, self.name + " composition " + that.name)
 
     # Max-product composition of two fuzzy relations
     def max_product(self, that):
@@ -233,7 +246,7 @@ class FuzzyRelation:
             for j in range(len(that.tgt.values)):
                 arr[i][j] = max([self.arr[i, k] * that.arr[k, j] for k in range(len(self.tgt.values))])
 
-        return FuzzyRelation(self.src, that.tgt, arr)
+        return FuzzyRelation(self.src, that.tgt, arr, self.name + " composition " + that.name)
 
     # Multiplication fo two fuzzy relations gives max-min composition
     def __mul__(self, that):
@@ -243,19 +256,19 @@ class FuzzyRelation:
 
     # Inverse of fuzzy relation (u' = 1 - u)
     def __inv__(self):
-        return FuzzyRelation(self.src, self.tgt, np.ones_like(self.arr) - arr)
+        return FuzzyRelation(self.src, self.tgt, np.ones_like(self.arr) - self.arr, "not " + self.name)
 
     # Intersection of fuzzy relations (u' = min(u1, u2))
     def __and__(self, that):
         assert self.tgt == that.tgt & self.src == that.src , "The linguistic variables do not match"
 
-        return FuzzyRelation(self.src, self.tgt, np.minimum(self.arr, that.arr))
+        return FuzzyRelation(self.src, self.tgt, np.minimum(self.arr, that.arr), self.name + " and " + that.name)
 
     # Union of fuzzy relations (u' = max(u1, u2))
     def __or__(self, that):
         assert self.tgt == that.tgt & self.src == that.src , "The linguistic variables do not match"
 
-        return FuzzyRelation(self.src, self.tgt, np.maximum(self.arr, that.arr))
+        return FuzzyRelation(self.src, self.tgt, np.maximum(self.arr, that.arr), self.name + " or " + that.name)
 
 service = LinguisticVariable(range(0, 11), 'Service')
 service.make_set([1  , 0.8, 0.6, 0.4, 0.2, 0  , 0  , 0  , 0  , 0  , 0], 'Poor')
